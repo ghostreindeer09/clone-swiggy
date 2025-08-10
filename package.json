@@ -1,35 +1,7 @@
 {
-  "name": "swiggy-clone",
-  "version": "1.0.0",
-  "description": "A beautiful and modern Swiggy clone with amazing UI/UX",
-  "main": "index.html",
-  "scripts": {
-    "start": "python -m http.server 8000",
-    "dev": "live-server --port=8000",
-    "build": "echo 'Static site - no build required'",
-    "serve": "npx serve ."
-  },
-  "keywords": [
-    "swiggy",
-    "food-delivery",
-    "clone",
-    "frontend",
-    "html",
-    "css",
-    "javascript"
-  ],
-  "author": "Your Name",
-  "license": "MIT",
-  "devDependencies": {
-    "live-server": "^1.2.2",
-    "serve": "^14.2.1"
-  },
   "dependencies": {
-    "ogl": "^1.0.11"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/yourusername/swiggy-clone.git"
-  },
-  "homepage": "https://yourusername.github.io/swiggy-clone"
+    "bcryptjs": "^3.0.2",
+    "eslint": "^9.33.0",
+    "jsonwebtoken": "^9.0.2"
+  }
 }

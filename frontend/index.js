@@ -1,72 +1,23 @@
-// Restaurant Data
-const restaurants = [
-    {
-        id: 1,
-        name: "Pizza Palace",
-        cuisine: "Italian, Pizza",
-        rating: 4.5,
-        deliveryTime: "30-35 min",
-        deliveryFee: "₹40",
-        image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
-        minOrder: "₹200",
-        offers: ["50% OFF", "Free Delivery"]
-    },
-    {
-        id: 2,
-        name: "Burger House",
-        cuisine: "American, Burgers",
-        rating: 4.2,
-        deliveryTime: "25-30 min",
-        deliveryFee: "₹30",
-        image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
-        minOrder: "₹150",
-        offers: ["30% OFF", "Free Delivery"]
-    },
-    {
-        id: 3,
-        name: "Spice Garden",
-        cuisine: "Indian, Chinese",
-        rating: 4.7,
-        deliveryTime: "35-40 min",
-        deliveryFee: "₹50",
-        image: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
-        minOrder: "₹300",
-        offers: ["20% OFF"]
-    },
-    {
-        id: 4,
-        name: "Sushi Master",
-        cuisine: "Japanese, Sushi",
-        rating: 4.8,
-        deliveryTime: "40-45 min",
-        deliveryFee: "₹60",
-        image: "https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
-        minOrder: "₹400",
-        offers: ["Free Delivery"]
-    },
-    {
-        id: 5,
-        name: "Taco Fiesta",
-        cuisine: "Mexican, Tacos",
-        rating: 4.3,
-        deliveryTime: "20-25 min",
-        deliveryFee: "₹25",
-        image: "https://images.unsplash.com/photo-1565299585323-2d6f92036398?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
-        minOrder: "₹180",
-        offers: ["40% OFF"]
-    },
-    {
-        id: 6,
-        name: "Dessert Paradise",
-        cuisine: "Desserts, Ice Cream",
-        rating: 4.6,
-        deliveryTime: "15-20 min",
-        deliveryFee: "₹20",
-        image: "https://images.unsplash.com/photo-1565958011703-44f9829ba187?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
-        minOrder: "₹100",
-        offers: ["Buy 1 Get 1"]
-    }
-];
+function displayCategories(cuisines) {
+    const categoriesGrid = document.getElementById('categories-grid');
+    categoriesGrid.innerHTML = '';
+
+    cuisines.forEach(cuisine => {
+        const categoryCard = document.createElement('div');
+        categoryCard.className = 'category-card';
+        categoryCard.innerHTML = `
+            <img src="${getRestaurantImage(cuisine)}" alt="${cuisine}" class="category-img">
+            <h3>${cuisine}</h3>
+        `;
+        categoriesGrid.appendChild(categoryCard);
+    });
+}
+
+// Restaurant Data - will be fetched from API
+let restaurants = [];
+
+// API Configuration
+const API_BASE_URL = 'http://localhost:3000';
 
 // Cart functionality
 let cart = [];
@@ -81,9 +32,80 @@ const cartCountElement = document.querySelector('.cart-count');
 const closeCartBtn = document.getElementById('close-cart');
 const cartBtn = document.querySelector('.cart');
 
+// Fetch restaurants from API
+async function fetchRestaurants() {
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            console.error('No authentication token found');
+            showError('Please sign in to view restaurants');
+            return;
+        }
+
+        const response = await fetch(`${API_BASE_URL}/restaurants`, {
+            headers: {
+                'x-auth-token': token,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const dbRestaurants = await response.json();
+
+        // Get unique cuisines
+        const cuisines = [...new Set(dbRestaurants.map(r => r.cuisine))];
+        displayCategories(cuisines);
+        
+        // Transform DB restaurants to match frontend format with additional UI data
+        restaurants = dbRestaurants.map((restaurant, index) => ({
+            id: restaurant._id,
+            name: restaurant.name,
+            cuisine: restaurant.cuisine,
+            rating: 4.5, // Default rating since not in DB
+            deliveryTime: "30-40 min", // Default delivery time
+            deliveryFee: "₹40", // Default delivery fee
+            image: getRestaurantImage(restaurant.cuisine), // Get image based on cuisine
+            minOrder: "₹200", // Default minimum order
+            offers: ["Fresh & Hot"] // Default offers
+        }));
+
+        displayRestaurants();
+    } catch (error) {
+        console.error('Error fetching restaurants:', error);
+        showError('Failed to load restaurants. Please try again.');
+    }
+}
+
+// Get appropriate image based on cuisine type
+function getRestaurantImage(cuisine) {
+    const imageMap = {
+        'North Indian': 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
+        'Italian': 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
+        'Japanese': 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80'
+    };
+    
+    return imageMap[cuisine] || 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80';
+}
+
+// Enhanced notification system\nfunction showNotification(message, type = 'success') {\n    // Remove existing notifications\n    const existingNotifications = document.querySelectorAll('.notification');\n    existingNotifications.forEach(n => n.remove());\n    \n    const notification = document.createElement('div');\n    notification.className = `notification ${type}`;\n    notification.innerHTML = `\n        <div style=\"display: flex; align-items: center; gap: 12px;\">\n            <i class=\"fas ${\n                type === 'success' ? 'fa-check-circle' : \n                type === 'error' ? 'fa-times-circle' : 'fa-info-circle'\n            }\"></i>\n            <span>${message}</span>\n        </div>\n    `;\n    \n    document.body.appendChild(notification);\n    \n    // Trigger animation\n    setTimeout(() => notification.classList.add('show'), 100);\n    \n    // Remove after delay\n    setTimeout(() => {\n        notification.classList.remove('show');\n        setTimeout(() => notification.remove(), 300);\n    }, 4000);\n}\n\n// Show loading state\nfunction showLoading() {\n    const restaurantsGrid = document.getElementById('restaurants-grid');\n    if (restaurantsGrid) {\n        restaurantsGrid.innerHTML = `\n            <div style=\"grid-column: 1 / -1; text-align: center; padding: 60px 20px;\">\n                <div class=\"loading-spinner\" style=\"margin: 0 auto 20px;\"></div>\n                <h3 style=\"color: #333; margin-bottom: 8px;\">Loading Restaurants</h3>\n                <p style=\"color: #666;\">Finding the best restaurants near you...</p>\n            </div>\n        `;\n    }\n}\n\n// Show error message to user
+function showError(message) {
+    const restaurantsGrid = document.getElementById('restaurants-grid');
+    if (restaurantsGrid) {
+        restaurantsGrid.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #666;">
+                <h3>${message}</h3>
+                <p>Please refresh the page or try again later.</p>
+            </div>
+        `;
+    }
+}
+
 // Initialize the app
 document.addEventListener('DOMContentLoaded', function() {
-    displayRestaurants();
+    fetchRestaurants(); // Fetch from API instead of displaying hardcoded data
     setupEventListeners();
     setupSearchFunctionality();
     setupSmoothScrolling();
@@ -120,19 +142,18 @@ function createRestaurantCard(restaurant) {
             <div class="restaurant-offers">
                 ${restaurant.offers.map(offer => `<span class="offer-tag">${offer}</span>`).join('')}
             </div>
-            <button class="add-to-cart-btn" onclick="addToCart(${restaurant.id})">
+            <button class="add-to-cart-btn" onclick='addToCart("${restaurant.id}")'>
                 Add to Cart
             </button>
         </div>
     `;
     
-    // Add hover effect
-    card.addEventListener('mouseenter', function() {
-        this.style.transform = 'translateY(-5px)';
-    });
-    
-    card.addEventListener('mouseleave', function() {
-        this.style.transform = 'translateY(0)';
+    card.addEventListener('click', (e) => {
+        // Prevent navigation when clicking inside the Add to Cart button
+        if (e.target && e.target.closest && e.target.closest('.add-to-cart-btn')) {
+            return;
+        }
+        window.location.href = `restaurant.html?id=${restaurant.id}`;
     });
     
     return card;
@@ -163,33 +184,42 @@ function addToCart(restaurantId) {
 
 // Update cart display
 function updateCart() {
-    cartCountElement.textContent = cart.reduce((total, item) => total + item.quantity, 0);
+    // Safely update cart count if element exists
+    if (cartCountElement) {
+        cartCountElement.textContent = cart.reduce((total, item) => total + item.quantity, 0);
+    }
     
-    cartItems.innerHTML = '';
+    if (cartItems) {
+        cartItems.innerHTML = '';
+    }
     cartTotal = 0;
     
     cart.forEach(item => {
         const itemTotal = item.price * item.quantity;
         cartTotal += itemTotal;
         
-        const cartItem = document.createElement('div');
-        cartItem.className = 'cart-item';
-        cartItem.innerHTML = `
-            <img src="${item.image}" alt="${item.name}" class="cart-item-img">
-            <div class="cart-item-info">
-                <div class="cart-item-name">${item.name}</div>
-                <div class="cart-item-price">₹${item.price}</div>
-            </div>
-            <div class="cart-item-quantity">
-                <button class="quantity-btn" onclick="updateQuantity(${item.id}, -1)">-</button>
-                <span>${item.quantity}</span>
-                <button class="quantity-btn" onclick="updateQuantity(${item.id}, 1)">+</button>
-            </div>
-        `;
-        cartItems.appendChild(cartItem);
+        if (cartItems) {
+            const cartItem = document.createElement('div');
+            cartItem.className = 'cart-item';
+            cartItem.innerHTML = `
+                <img src="${item.image}" alt="${item.name}" class="cart-item-img">
+                <div class="cart-item-info">
+                    <div class="cart-item-name">${item.name}</div>
+                    <div class="cart-item-price">₹${item.price}</div>
+                </div>
+                <div class="cart-item-quantity">
+                    <button class="quantity-btn" onclick="updateQuantity('${item.id}', -1)">-</button>
+                    <span>${item.quantity}</span>
+                    <button class="quantity-btn" onclick="updateQuantity('${item.id}', 1)">+</button>
+                </div>
+            `;
+            cartItems.appendChild(cartItem);
+        }
     });
     
-    cartTotalElement.textContent = `₹${cartTotal}`;
+    if (cartTotalElement) {
+        cartTotalElement.textContent = `₹${cartTotal}`;
+    }
 }
 
 // Update item quantity
@@ -206,33 +236,6 @@ function updateQuantity(itemId, change) {
     updateCart();
 }
 
-// Show notification
-function showNotification(message) {
-    const notification = document.createElement('div');
-    notification.className = 'notification';
-    notification.textContent = message;
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: #fc8019;
-        color: white;
-        padding: 15px 20px;
-        border-radius: 8px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-        z-index: 3000;
-        animation: slideInRight 0.3s ease-out;
-    `;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.style.animation = 'slideOutRight 0.3s ease-out';
-        setTimeout(() => {
-            document.body.removeChild(notification);
-        }, 300);
-    }, 2000);
-}
 
 // Setup event listeners
 function setupEventListeners() {
@@ -318,7 +321,7 @@ function filterRestaurants(query) {
 
 // Smooth scrolling
 function setupSmoothScrolling() {
-    const navLinks = document.querySelectorAll('.nav-link');
+const navLinks = document.querySelectorAll('.nav-link:not([href="signin.html"])');
     navLinks.forEach(link => {
         link.addEventListener('click', function(e) {
             e.preventDefault();
@@ -408,7 +411,7 @@ document.head.appendChild(style);
 
 // Keyboard navigation
 document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && cartModal.classList.contains('active')) {
+    if (e.key === 'Escape' && cartModal && cartModal.classList.contains('active')) {
         cartModal.classList.remove('active');
     }
 });
@@ -438,12 +441,14 @@ document.querySelectorAll('.search-input, .hero-search-input').forEach(input => 
     });
 });
 
-// Add loading states
-function showLoading(element) {
+// Add loading states (inline helper names to avoid clashing with page-level showLoading)
+function showInlineLoading(element) {
+    if (!element) return;
     element.innerHTML = '<div class="loading"></div>';
 }
 
-function hideLoading(element) {
+function hideInlineLoading(element) {
+    if (!element) return;
     element.innerHTML = '';
 }
 
