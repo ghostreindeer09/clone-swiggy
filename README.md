@@ -87,6 +87,8 @@ npm start
 
 <p align="center">
   <img src="assets/homepage.png" alt="Clone-Swiggy Homepage" width="800"/>
+<img width="1919" height="1020" alt="Screenshot 2025-08-09 232802" src="https://github.com/user-attachments/assets/42a58ac7-3b3b-4f38-8fd8-037d6dfdfc41" />
+
 </p>
 
 <h2>📁 Folder Structure</h2>
